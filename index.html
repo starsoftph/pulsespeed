@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseSpeed — Connection Speed Test</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #131a2a;
+      --card-border: #222c44;
+      --text: #f3f6fc;
+      --muted: #8b9bb8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #17223b 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      gap: 12px;
+    }
+
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .status-pill {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 999px;
+    }
+
+    .hero-speed {
+      text-align: center;
+      padding: 24px 0 32px;
+    }
+
+    .phase-label {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 8px;
+      min-height: 1.2em;
+    }
+
+    .speed-value {
+      font-size: clamp(3.5rem, 11vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-unit {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-num {
+      font-size: 1.35rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #07111f;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .note {
+      margin-top: 22px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 540px) {
+      .container {
+        padding: 22px;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div class="brand">Pulse<span>Speed</span></div>
+      <div id="modeBadge" class="status-pill">Ready</div>
+    </header>
+
+    <section class="hero-speed">
+      <div id="phaseLabel" class="phase-label">Click Start to test</div>
+      <div id="mainSpeed" class="speed-value">0.0</div>
+      <div id="mainUnit" class="speed-unit">Mbps</div>
+    </section>
+
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Avg Ping (Google + CF)</div>
+        <div id="pingVal" class="metric-num">— ms</div>
+        <div id="jitterVal" class="metric-sub">G: — ms · CF: — ms</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Download</div>
+        <div id="dlVal" class="metric-num">—</div>
+        <div class="metric-sub">Mbps</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Upload</div>
+        <div id="ulVal" class="metric-num">—</div>
+        <div class="metric-sub">Mbps</div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="startBtn" type="button">Start Test</button>
+    </div>
+
+    <p id="statusNote" class="note">
+      Ping averages HTTP round-trip probes across Google (<code>gstatic.com</code>) and Cloudflare (<code>cloudflare.com</code>). Download and upload still use fallback demo values until you attach bandwidth endpoints.
+    </p>
+  </main>
+
+  <script>
+    const PING_TARGETS = [
+      { name: "Google", url: "https://connectivitycheck.gstatic.com/generate_204" },
+      { name: "Cloudflare", url: "https://www.cloudflare.com/cdn-cgi/trace" }
+    ];
+
+    const TEST_ENDPOINTS = {
+      downloadUrl: null,
+      uploadUrl: null
+    };
+
+    const startBtn = document.getElementById("startBtn");
+    const phaseLabel = document.getElementById("phaseLabel");
+    const mainSpeed = document.getElementById("mainSpeed");
+    const mainUnit = document.getElementById("mainUnit");
+    const pingVal = document.getElementById("pingVal");
+    const jitterVal = document.getElementById("jitterVal");
+    const dlVal = document.getElementById("dlVal");
+    const ulVal = document.getElementById("ulVal");
+    const modeBadge = document.getElementById("modeBadge");
+    const statusNote = document.getElementById("statusNote");
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    function bytesToMbps(bytes, durationMs) {
+      const seconds = durationMs / 1000;
+      if (seconds <= 0) return 0;
+      return (bytes * 8) / (seconds * 1_000_000);
+    }
+
+    function average(arr) {
+      return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    }
+
+    async function singlePingProbe(url, index) {
+      const sep = url.includes("?") ? "&" : "?";
+      const target = `${url}${sep}cb=${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+      const start = performance.now();
+      await fetch(target, {
+        mode: "no-cors",
+        cache: "no-store",
+        keepalive: false
+      });
+      return performance.now() - start;
+    }
+
+    async function measurePing() {
+      phaseLabel.textContent = "Pinging Google & Cloudflare";
+      mainUnit.textContent = "ms";
+
+      const probesPerTarget = 6; // Probe 0 is warm-up; probes 1..5 are kept
+      const perHostSamples = {
+        Google: [],
+        Cloudflare: []
+      };
+      const combinedWarmSamples = [];
+
+      for (let i = 0; i < probesPerTarget; i++) {
+        for (const host of PING_TARGETS) {
+          phaseLabel.textContent = `Pinging ${host.name} (${i + 1}/${probesPerTarget})`;
+          try {
+            const rtt = await singlePingProbe(host.url, i);
+            if (i > 0) {
+              perHostSamples[host.name].push(rtt);
+              combinedWarmSamples.push(rtt);
+
+              const liveCombinedAvg = average(combinedWarmSamples);
+              mainSpeed.textContent = liveCombinedAvg.toFixed(0);
+              pingVal.textContent = `${liveCombinedAvg.toFixed(0)} ms`;
+            }
+          } catch {
+            // Skip failed probe so one blocked host doesn't abort the test
+          }
+          await sleep(60);
+        }
+      }
+
+      const gAvg = average(perHostSamples.Google);
+      const cfAvg = average(perHostSamples.Cloudflare);
+      const combinedAvg = average(combinedWarmSamples);
+
+      if (combinedAvg !== null) {
+        pingVal.textContent = `${combinedAvg.toFixed(0)} ms`;
+        mainSpeed.textContent = combinedAvg.toFixed(0);
+      } else {
+        pingVal.textContent = "Blocked";
+      }
+
+      const gText = gAvg !== null ? `${gAvg.toFixed(0)} ms` : "—";
+      const cfText = cfAvg !== null ? `${cfAvg.toFixed(0)} ms` : "—";
+      jitterVal.textContent = `G: ${gText} · CF: ${cfText}`;
+    }
+
+    async function measureDownload() {
+      phaseLabel.textContent = "Testing Download Speed";
+      mainUnit.textContent = "Mbps";
+
+      if (TEST_ENDPOINTS.downloadUrl) {
+        const chunks = 4;
+        let totalBytes = 0;
+        const startTime = performance.now();
+
+        for (let i = 0; i < chunks; i++) {
+          const res = await fetch(`${TEST_ENDPOINTS.downloadUrl}&cb=${Date.now()}-${i}`, {
+            cache: "no-store"
+          });
+          const buf = await res.arrayBuffer();
+          totalBytes += buf.byteLength;
+          const elapsed = performance.now() - startTime;
+          const currentMbps = bytesToMbps(totalBytes, elapsed);
+          mainSpeed.textContent = currentMbps.toFixed(1);
+          dlVal.textContent = currentMbps.toFixed(1);
+        }
+
+        const finalMbps = bytesToMbps(totalBytes, performance.now() - startTime);
+        mainSpeed.textContent = finalMbps.toFixed(1);
+        dlVal.textContent = finalMbps.toFixed(1);
+      } else {
+        const target = 140 + Math.random() * 180;
+        for (let step = 1; step <= 12; step++) {
+          const eased = 1 - Math.pow(1 - step / 12, 2);
+          const current = target * eased * (0.94 + Math.random() * 0.12);
+          mainSpeed.textContent = current.toFixed(1);
+          dlVal.textContent = current.toFixed(1);
+          await sleep(140);
+        }
+        mainSpeed.textContent = target.toFixed(1);
+        dlVal.textContent = target.toFixed(1);
+      }
+    }
+
+    async function measureUpload() {
+      phaseLabel.textContent = "Testing Upload Speed";
+      mainUnit.textContent = "Mbps";
+
+      if (TEST_ENDPOINTS.uploadUrl) {
+        const payloadSize = 5 * 1024 * 1024;
+        const payload = new Blob([new Uint8Array(payloadSize)]);
+        const rounds = 3;
+        let totalBytes = 0;
+        const startTime = performance.now();
+
+        for (let i = 0; i < rounds; i++) {
+          await fetch(`${TEST_ENDPOINTS.uploadUrl}?cb=${Date.now()}-${i}`, {
+            method: "POST",
+            body: payload,
+            cache: "no-store"
+          });
+          totalBytes += payloadSize;
+          const currentMbps = bytesToMbps(totalBytes, performance.now() - startTime);
+          mainSpeed.textContent = currentMbps.toFixed(1);
+          ulVal.textContent = currentMbps.toFixed(1);
+        }
+
+        const finalMbps = bytesToMbps(totalBytes, performance.now() - startTime);
+        mainSpeed.textContent = finalMbps.toFixed(1);
+        ulVal.textContent = finalMbps.toFixed(1);
+      } else {
+        const target = 55 + Math.random() * 110;
+        for (let step = 1; step <= 10; step++) {
+          const eased = 1 - Math.pow(1 - step / 10, 2);
+          const current = target * eased * (0.93 + Math.random() * 0.14);
+          mainSpeed.textContent = current.toFixed(1);
+          ulVal.textContent = current.toFixed(1);
+          await sleep(140);
+        }
+        mainSpeed.textContent = target.toFixed(1);
+        ulVal.textContent = target.toFixed(1);
+      }
+    }
+
+    async function runSpeedTest() {
+      startBtn.disabled = true;
+      pingVal.textContent = "— ms";
+      jitterVal.textContent = "G: — ms · CF: — ms";
+      dlVal.textContent = "—";
+      ulVal.textContent = "—";
+
+      const hasBandwidth = Boolean(TEST_ENDPOINTS.downloadUrl || TEST_ENDPOINTS.uploadUrl);
+      modeBadge.textContent = hasBandwidth ? "Live Ping + Bandwidth" : "Google+CF Ping · Demo BW";
+
+      try {
+        await measurePing();
+        await sleep(250);
+        await measureDownload();
+        await sleep(250);
+        await measureUpload();
+
+        phaseLabel.textContent = "Test Complete";
+        mainUnit.textContent = "Final Download (Mbps)";
+        mainSpeed.textContent = dlVal.textContent;
+      } catch (err) {
+        phaseLabel.textContent = "Test Interrupted";
+        statusNote.textContent = `Request failed (${err.message}). Check network access or browser extensions.`;
+      } finally {
+        startBtn.disabled = false;
+        startBtn.textContent = "Test Again";
+      }
+    }
+
+    startBtn.addEventListener("click", runSpeedTest);
+  </script>
+</body>
+</html>
